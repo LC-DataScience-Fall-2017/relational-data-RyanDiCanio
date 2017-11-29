@@ -1,0 +1,144 @@
+---
+title: "Relational Data"
+author: "Ryan DiCanio"
+date: "November 28, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r cars}
+summary(cars)
+```
+ 
+```{r}
+library("tidyverse")
+library("nycflights13")
+```
+
+##13.2.1 Exercises
+
+1. You'd need flights and airports. In the flights table we'd need the origin and dest, while in airports we'd need the latitude and longitutde variables. we would merge flights and airports together. 
+
+2. 'origin' variable that is in 'weather' is matched to 'faa' in 'airports.'
+
+3. the following variables in 'weather': year, month, day, hour, origin; they would be matched up with the following variables in 'flight': year, month, day, hour, dest. 
+
+4. Since they are "special" days, I would add a table of special dates, with the primary key being the date. The year, month, and day columns in 'flights' would be matched to it. 
+
+##13.3.1 Exercises
+
+1. 
+```{r}
+flights %>% 
+  arrange(year, month, day, sched_dep_time, carrier, flight) %>%
+  mutate(flight_id = row_number()) %>%
+  glimpse()
+```
+
+2. 
+Lahman : Batting- playerID, yearID, stint
+
+babynames : babynames- year, sex, name
+
+nasaweather : atmos- lat, long, year, month
+
+fueleconomy : vehicles- id
+
+ggplot2 : diamonds- no distinct primary key
+
+3.
+
+##13.4.6 Exercises
+
+1. 
+```{r}
+airports %>%
+  semi_join(flights, c("faa" = "dest")) %>%
+  ggplot(aes(lon, lat)) +
+    borders("state") +
+    geom_point() +
+    coord_quickmap()
+```
+```{r}
+avg_dest_delays <-
+  flights %>%
+  group_by(dest) %>%
+  summarise(delay = mean(arr_delay, na.rm = TRUE)) %>%
+  inner_join(airports, by = c(dest = "faa"))
+
+avg_dest_delays %>%
+  ggplot(aes(lon, lat, colour = delay)) +
+    borders("state") +
+    geom_point() +
+    coord_quickmap()
+```
+
+2. 
+```{r}
+flights %>%
+  left_join(airports, by = c(dest = "faa")) %>%
+  left_join(airports, by = c(origin = "faa")) %>%
+  head()
+```
+
+3. There is little to no relationship between the age of the plan and delay times.
+
+4. Almost every time there is any amount of precipation, there is a delay associated with it. 
+
+5.
+```{r}
+library(viridis)
+flights %>%
+  filter(year == 2013, month == 6, day == 13) %>%
+  group_by(dest) %>%
+  summarise(delay = mean(arr_delay, na.rm = TRUE)) %>%
+  inner_join(airports, by = c("dest" = "faa")) %>%
+  ggplot(aes(y = lat, x = lon, size = delay, colour = delay)) +
+  borders("state") +
+  geom_point() +
+  coord_quickmap() + 
+  scale_color_viridis()
+```
+
+The southeastern part of the US was experiencing a large series of storms. 
+
+##13.5.1 Exercises
+
+1. tail numbers are not given by AA and MQ.
+
+2. 
+```{r}
+planes_gt100 <- 
+  filter(flights) %>%
+  group_by(tailnum) %>%
+  count() %>%
+  filter(n > 100)
+
+flights %>%
+  semi_join(planes_gt100, by = "tailnum")
+```
+
+3.
+```{r}
+fueleconomy::vehicles %>%
+  semi_join(fueleconomy::common, by = c("make", "model"))
+```
+
+4. 
+
+5. anti_join(flights, airports, by = c("dest" = "faa")): flights going to an not in FAA list of destinations.
+
+anti_join(airports, flights, by = c("faa" = "dest")): US airports that don’t have a flight in the data.
+
+6.
+```{r}
+flights %>%
+  group_by(tailnum, carrier) %>%
+  count() %>%
+  filter(n() > 1) %>%
+  select(tailnum) %>%
+  distinct()
+```
